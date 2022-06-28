@@ -31,9 +31,11 @@ class GMM(object):
         Return:
             prob: N x D numpy array. See the above function.
         """
+        logit -= np.max(logit,axis=1)[:,None]
+        prob = np.exp(logit)/(np.sum(np.exp(logit),axis=1))[:,None]
+        return prob
 
-
-        raise NotImplementedError
+        #raise NotImplementedError
 
     def logsumexp(self, logit):  # [5pts]
         """
@@ -42,9 +44,12 @@ class GMM(object):
         Return:
             s: N x 1 array where s[i,0] = logsumexp(logit[i,:]). See the above function
         """
+        maxvals = np.max(logit,axis=1)[:,None]
+        logit -= maxvals
+        s = np.log(np.sum(np.exp(logit),axis=1))+maxvals.ravel()
+        return s
 
-
-        raise NotImplementedError
+        #raise NotImplementedError
 
     # for undergraduate student
     def normalPDF(self, logit, mu_i, sigma_i):  # [5pts]
@@ -59,9 +64,12 @@ class GMM(object):
         Hint:
             np.diagonal() should be handy.
         """
+        var = sigma_i.diagonal().T
+        n1 = (2 * np.pi * var)**0.5
+        n2 = np.exp(-(logit - mu_i)**2/(2 * var))
+        return np.prod(n2/n1, axis=1)
 
-
-        raise NotImplementedError
+        #raise NotImplementedError
 
     # for grad students
     def multinormalPDF(self, logits, mu_i, sigma_i):  # [5pts]
@@ -78,9 +86,14 @@ class GMM(object):
             2. The value in self.D may be outdated and not correspond to the current dataset,
             try using another method involving the current arguments to get the value of D
         """
-
-
-        raise NotImplementedError
+        N, D = logits.shape
+        sigma_i_sqz = sigma_i[0]
+        tmp = np.matmul((logits - mu_i), np.linalg.inv(sigma_i+SIGMA_CONST)).T * (logits - mu_i).T # D×N
+        tmp = np.sum(tmp, axis=0)
+        normal_pdf = 1.0 / np.power(2.0 * np.pi, D / 2.0) * \
+                        np.power(np.linalg.det(sigma_i), - 0.5) * \
+                        np.exp(-0.5 * tmp)
+        return normal_pdf
 
 
     def _init_components(self, **kwargs):  # [5pts]
@@ -93,8 +106,13 @@ class GMM(object):
             sigma: KxDxD numpy array, the diagonal standard deviation of each gaussian.
                 You will have KxDxD numpy array for full covariance matrix case
         """
+        pi = np.ones(self.K) * (1.0 / self.K)
+        rand_idx = np.random.choice(self.N, size=self.K, replace=False)
+        mu = self.points[rand_idx]
+        sigma = np.array([np.eye(self.points.shape[1]) for _ in range(self.K)])
+        return pi, mu, sigma
 
-        raise NotImplementedError
+        #raise NotImplementedError
 
     def _ll_joint(self, pi, mu, sigma, full_matrix=FULL_MATRIX, **kwargs):  # [10 pts]
         """
@@ -115,8 +133,14 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
-
-        raise NotImplementedError
+        
+        ll_ls = []
+        for k in range(self.K):
+            ll_k = np.log(pi[k]+LOG_CONST) + np.log(self.multinormalPDF(self.points, mu[k], sigma[k])+LOG_CONST)
+            ll_ls.append(ll_k)
+        ll = np.array(ll_ls).T
+        return ll
+        #raise NotImplementedError
 
     def _E_step(self, pi, mu, sigma,  full_matrix=FULL_MATRIX, **kwargs):  # [5pts]
         """
@@ -139,8 +163,8 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
-
-        raise NotImplementedError
+        gamma = self.softmax(self._ll_joint(pi, mu, sigma))
+        return gamma
 
     def _M_step(self, gamma, full_matrix=FULL_MATRIX, **kwargs):  # [10pts]
         """
@@ -164,8 +188,16 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
-
-        raise NotImplementedError
+        N_k = np.sum(gamma, axis=0)
+        mu = np.array(
+            [np.sum(gamma[:, k].reshape(self.N, 1) * self.points, axis=0) / N_k[k] for k in range(self.K)] 
+        )
+        sigma = np.array(
+            [np.matmul((gamma[:, k].reshape(self.N, 1) * (self.points - mu[k].reshape(1, self.D))).T, self.points - mu[k].reshape(1, self.D)) / N_k[k]
+            for k in range(self.K)]
+            )
+        pi = N_k / self.N
+        return pi, mu, sigma
 
     def __call__(self, full_matrix=FULL_MATRIX, abs_tol=1e-16, rel_tol=1e-16, **kwargs):  # No need to change
         """

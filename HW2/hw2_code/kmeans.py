@@ -26,8 +26,9 @@ class KMeans(object):
             centers: K x D numpy array, the centers.
         Hint: Please initialize centers by randomly sampling points from the dataset in case the autograder fails.
         """
-
-        raise NotImplementedError
+        return points[np.random.choice(points.shape[0], K, replace = False)]
+            
+        #raise NotImplementedError
 
     def _update_assignment(self, centers, points):  # [10 pts]
         """
@@ -39,8 +40,9 @@ class KMeans(object):
 
         Hint: You could call pairwise_dist() function.
         """
+        return np.argmin(pairwise_dist(centers, points), axis = 0)
 
-        raise NotImplementedError
+        #raise NotImplementedError
 
     def _update_centers(self, old_centers, cluster_idx, points):  # [10 pts]
         """
@@ -53,8 +55,13 @@ class KMeans(object):
 
         HINT: If you need to reduce the number of clusters when there are 0 points for a center, then do so.
         """
+        K = old_centers.shape[0]
+        centers = np.empty(old_centers.shape)
+        for i in range(K):
+            centers[i] = np.mean(points[cluster_idx == i], axis = 0)
+        return centers
 
-        raise NotImplementedError
+        #raise NotImplementedError
 
     def _get_loss(self, centers, cluster_idx, points):  # [5 pts]
         """
@@ -65,8 +72,9 @@ class KMeans(object):
         Return:
             loss: a single float number, which is the objective function of KMeans.
         """
+        return np.sum(pairwise_dist(centers, points)[cluster_idx,np.arange(len(cluster_idx))])
 
-        raise NotImplementedError
+        #raise NotImplementedError
 
     def __call__(self, points, K, max_iters=100, abs_tol=1e-16, rel_tol=1e-16, verbose=False, **kwargs):
         """
@@ -108,8 +116,14 @@ def find_optimal_num_clusters(image, max_K=15):  # [10 pts]
     Return:
         losses: vector of loss values (also plot loss values against number of clusters but do not return this)
     """
+    losses = []
+    #for each value of K, find the loss and append to array
+    for i in range(1,max_K+1):
+        cluster_idx, centers, loss = KMeans()(image, i)
+        losses.append(loss)
+    return losses
 
-    raise NotImplementedError
+    #raise NotImplementedError
 
 
 def pairwise_dist(x, y):  # [5 pts]
@@ -122,6 +136,16 @@ def pairwise_dist(x, y):  # [5 pts]
         dist: N x M array, where dist2[i, j] is the euclidean distance between
         x[i, :] and y[j, :]
     """
+    dist = x[:, :, None] - y[:, :, None].T
+    dist = np.sqrt((dist * dist).sum(axis=1))
+    return dist
+    '''
+    N = x.shape[0]
+    M = y.shape[0]
+    
+    A = (x * x).sum(axis = 1).reshape((N, 1)) * np.ones(shape = (1, M))
+    B = (y * y).sum(axis = 1) * np.ones(shape = (N, 1))
+    return np.sqrt(A + B - 2 * x.dot(y.T))
+    '''
 
-
-    raise NotImplementedError
+    #raise NotImplementedError
