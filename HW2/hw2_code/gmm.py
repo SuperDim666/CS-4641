@@ -31,9 +31,10 @@ class GMM(object):
         Return:
             prob: N x D numpy array. See the above function.
         """
-        logit -= np.max(logit,axis=1)[:,None]
-        prob = np.exp(logit)/(np.sum(np.exp(logit),axis=1))[:,None]
-        return prob
+        logit = logit - np.max(logit,axis=1)[:,None]
+        logit_exp = np.exp(logit)
+        logit_sum = (np.sum(np.exp(logit),axis=1))[:,None]
+        return logit_exp / logit_sum
 
         #raise NotImplementedError
 
@@ -44,10 +45,14 @@ class GMM(object):
         Return:
             s: N x 1 array where s[i,0] = logsumexp(logit[i,:]). See the above function
         """
-        maxvals = np.max(logit,axis=1)[:,None]
-        logit -= maxvals
-        s = np.log(np.sum(np.exp(logit),axis=1))+maxvals.ravel()
-        return s
+        N = logit.shape[0]
+        
+        max_val = np.max(logit, axis=1)
+        max_val_reshaped = max_val.reshape((N, 1))
+        logit = logit - max_val_reshaped
+        s = np.log(np.sum(np.exp(logit), axis=1)) + max_val
+        logit = logit + max_val_reshaped
+        return np.expand_dims(s, -1)
 
         #raise NotImplementedError
 
@@ -64,9 +69,9 @@ class GMM(object):
         Hint:
             np.diagonal() should be handy.
         """
-        var = sigma_i.diagonal().T
-        n1 = (2 * np.pi * var)**0.5
-        n2 = np.exp(-(logit - mu_i)**2/(2 * var))
+        transformed = sigma_i.diagonal().T
+        n1 = np.sqrt(2 * np.pi * transformed)
+        n2 = np.exp(-(logit - mu_i)**2/(2 * transformed))
         return np.prod(n2/n1, axis=1)
 
         #raise NotImplementedError
@@ -86,14 +91,6 @@ class GMM(object):
             2. The value in self.D may be outdated and not correspond to the current dataset,
             try using another method involving the current arguments to get the value of D
         """
-        N, D = logits.shape
-        sigma_i_sqz = sigma_i[0]
-        tmp = np.matmul((logits - mu_i), np.linalg.inv(sigma_i+SIGMA_CONST)).T * (logits - mu_i).T # D×N
-        tmp = np.sum(tmp, axis=0)
-        normal_pdf = 1.0 / np.power(2.0 * np.pi, D / 2.0) * \
-                        np.power(np.linalg.det(sigma_i), - 0.5) * \
-                        np.exp(-0.5 * tmp)
-        return normal_pdf
 
 
     def _init_components(self, **kwargs):  # [5pts]
@@ -107,8 +104,8 @@ class GMM(object):
                 You will have KxDxD numpy array for full covariance matrix case
         """
         pi = np.ones(self.K) * (1.0 / self.K)
-        rand_idx = np.random.choice(self.N, size=self.K, replace=False)
-        mu = self.points[rand_idx]
+        idx = np.random.choice(self.N, size=self.K, replace=False)
+        mu = self.points[idx]
         sigma = np.array([np.eye(self.points.shape[1]) for _ in range(self.K)])
         return pi, mu, sigma
 
@@ -133,14 +130,13 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
+        if full_matrix is False:
+            ll = np.empty((len(self.points), len(mu)))
+            for k in range(self.K):
+                ll[:, k]  = np.log(pi[k] + (1e-32)) + np.log(self.normalPDF(self.points, mu[k], sigma[k]) + (1e-32))
+            return ll
         
-        ll_ls = []
-        for k in range(self.K):
-            ll_k = np.log(pi[k]+LOG_CONST) + np.log(self.multinormalPDF(self.points, mu[k], sigma[k])+LOG_CONST)
-            ll_ls.append(ll_k)
-        ll = np.array(ll_ls).T
-        return ll
-        #raise NotImplementedError
+        raise NotImplementedError
 
     def _E_step(self, pi, mu, sigma,  full_matrix=FULL_MATRIX, **kwargs):  # [5pts]
         """
@@ -163,8 +159,9 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
-        gamma = self.softmax(self._ll_joint(pi, mu, sigma))
-        return gamma
+        if full_matrix is False:
+            return self.softmax(self._ll_joint(pi, mu, sigma))
+        raise NotImplementedError
 
     def _M_step(self, gamma, full_matrix=FULL_MATRIX, **kwargs):  # [10pts]
         """
@@ -188,16 +185,24 @@ class GMM(object):
         # === undergraduate implementation
         #if full_matrix is False:
             # ...
-        N_k = np.sum(gamma, axis=0)
-        mu = np.array(
-            [np.sum(gamma[:, k].reshape(self.N, 1) * self.points, axis=0) / N_k[k] for k in range(self.K)] 
-        )
-        sigma = np.array(
-            [np.matmul((gamma[:, k].reshape(self.N, 1) * (self.points - mu[k].reshape(1, self.D))).T, self.points - mu[k].reshape(1, self.D)) / N_k[k]
-            for k in range(self.K)]
-            )
-        pi = N_k / self.N
-        return pi, mu, sigma
+        if full_matrix is False:
+            N_k = np.sum(gamma,axis=0)
+            K = gamma.shape[1]
+            mu = np.zeros((K, self.D))
+            sigma = np.zeros((K, self.D, self.D))
+
+            for x in range(self.K):
+                mu_nom = np.sum(gamma[:, x].reshape(self.N,1) * self.points,axis=0)
+                mu[x,:]= mu_nom / N_k[x]
+
+                sigma_nom_1 = (gamma[:, x].reshape(self.N, 1) * (self.points - mu[x].reshape(1,self.D))).T
+                sigma_nom_2 = self.points - mu[x].reshape(1,self.D)
+                sigma[x,:] = np.diag(np.diag(np.matmul(sigma_nom_1,sigma_nom_2) / N_k[x]))
+
+            pi = N_k / self.N
+
+            return pi, mu, sigma
+        raise NotImplementedError
 
     def __call__(self, full_matrix=FULL_MATRIX, abs_tol=1e-16, rel_tol=1e-16, **kwargs):  # No need to change
         """

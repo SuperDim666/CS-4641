@@ -18,7 +18,16 @@ class DBSCAN(object):
         If a point is unvisited or is a noise point (has fewer than the minimum number of neighbor points), then its cluster assignment should be -1.
         Set the first cluster as C = 0
         """
-        raise NotImplementedError
+        neighbors = []
+        idxs = np.arange(len(self.dataset))
+        for i, _sample in enumerate(self.dataset[idxs != sample_i]):
+            distance = pairwise_dist(self.dataset[sample_i], _sample)
+            if distance < self.eps:
+                neighbors.append(i)
+        return np.array(neighbors)
+        
+        
+        #raise NotImplementedError
 
 
     def expandCluster(self, index, neighborIndices, C, cluster_idx, visitedIndices):
@@ -36,7 +45,9 @@ class DBSCAN(object):
             np.concatenate(), np.unique(), np.sort(), and np.take() may be helpful here
             A while loop may be better than a for loop
         """
-        raise NotImplementedError
+        
+        
+        #raise NotImplementedError
 
 
     def regionQuery(self, pointIndex):
@@ -48,4 +59,14 @@ class DBSCAN(object):
             indices: (N, ) int numpy array, indices of all points witin P's eps-neighborhood
         Hint: pairwise_dist (implemented above) and np.argwhere may be helpful here
         """
-        raise NotImplementedError
+        neighbors = []
+
+        # For each point in dataset 'D'-
+        for Pn in range(0, D.shape[0]):
+            # If distance < eps, add the point to the list-
+            if np.linalg.norm(D[P] - D[Pn], ord = 2) < eps:
+                neighbors.append(Pn)
+
+        return neighbors
+        
+        #raise NotImplementedError

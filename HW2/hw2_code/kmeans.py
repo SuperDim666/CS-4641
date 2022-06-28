@@ -26,7 +26,8 @@ class KMeans(object):
             centers: K x D numpy array, the centers.
         Hint: Please initialize centers by randomly sampling points from the dataset in case the autograder fails.
         """
-        return points[np.random.choice(points.shape[0], K, replace = False)]
+        idx = np.random.choice(points.shape[0], K, replace = False)
+        return points[idx]
             
         #raise NotImplementedError
 
@@ -40,7 +41,8 @@ class KMeans(object):
 
         Hint: You could call pairwise_dist() function.
         """
-        return np.argmin(pairwise_dist(centers, points), axis = 0)
+        dist = pairwise_dist(centers, points)
+        return np.argmin(dist, axis = 0)
 
         #raise NotImplementedError
 
@@ -55,11 +57,10 @@ class KMeans(object):
 
         HINT: If you need to reduce the number of clusters when there are 0 points for a center, then do so.
         """
-        K = old_centers.shape[0]
-        centers = np.empty(old_centers.shape)
-        for i in range(K):
-            centers[i] = np.mean(points[cluster_idx == i], axis = 0)
-        return centers
+        new_centers = np.empty(old_centers.shape)
+        for i in range(old_centers.shape[0]):
+            new_centers[i] = np.mean(points[np.argwhere(cluster_idx == i)], axis = 0)
+        return new_centers
 
         #raise NotImplementedError
 
@@ -72,7 +73,7 @@ class KMeans(object):
         Return:
             loss: a single float number, which is the objective function of KMeans.
         """
-        return np.sum(pairwise_dist(centers, points)[cluster_idx,np.arange(len(cluster_idx))])
+        return np.sum(np.linalg.norm(points - centers[cluster_idx]) ** 2)
 
         #raise NotImplementedError
 
@@ -117,12 +118,19 @@ def find_optimal_num_clusters(image, max_K=15):  # [10 pts]
         losses: vector of loss values (also plot loss values against number of clusters but do not return this)
     """
     losses = []
-    #for each value of K, find the loss and append to array
+    cluster_num = []
     for i in range(1,max_K+1):
         cluster_idx, centers, loss = KMeans()(image, i)
         losses.append(loss)
+        cluster_num.append(i)
+    #Plot elbow graph:
+    plt.plot(cluster_num,losses)
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Obj Func Value')
+    plt.title('Elbow Method Graph')
+    plt.show()
     return losses
-
+    
     #raise NotImplementedError
 
 
@@ -136,16 +144,7 @@ def pairwise_dist(x, y):  # [5 pts]
         dist: N x M array, where dist2[i, j] is the euclidean distance between
         x[i, :] and y[j, :]
     """
-    dist = x[:, :, None] - y[:, :, None].T
-    dist = np.sqrt((dist * dist).sum(axis=1))
-    return dist
-    '''
-    N = x.shape[0]
-    M = y.shape[0]
-    
-    A = (x * x).sum(axis = 1).reshape((N, 1)) * np.ones(shape = (1, M))
-    B = (y * y).sum(axis = 1) * np.ones(shape = (N, 1))
-    return np.sqrt(A + B - 2 * x.dot(y.T))
-    '''
+    squared = np.sum((x[:,None]-y[None,:])**2, -1)
+    return np.sqrt(squared)
 
     #raise NotImplementedError

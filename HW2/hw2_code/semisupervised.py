@@ -13,8 +13,10 @@ def complete_(data): # [1pts]
     Return:
         labeled_complete: n x D array (n <= N) where values contain both complete features and labels
     """
-    
-    raise NotImplementedError
+    temp = data[~np.isnan(a).any(axis=1)]
+    labeled_complete = np.delete(temp, np.where(temp[:,-1]!=0)[0],0)
+    return labeled_complete
+    #raise NotImplementedError
     
 def incomplete_(data): # [1pts]
     """
@@ -24,7 +26,7 @@ def incomplete_(data): # [1pts]
         labeled_incomplete: n x D array (n <= N) where values contain incomplete features but complete labels
     """    
     
-    raise NotImplementedError
+    #raise NotImplementedError
 
 def unlabeled_(data): # [1pts]
     """
