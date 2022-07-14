@@ -21,9 +21,19 @@ class ImgCompression(object):
             S: (min(N,D), ) numpy array for black and white images / (min(N,D),3) numpy array for color images
             V^T: (D,D) numpy array for black and white images / (D,D,3) numpy array for color images
         """
-        raise NotImplementedError
-
-
+        if len(X.shape) == 3:
+            U_chan_0, S_chan_0, V_chan_0 = np.linalg.svd(X[:, :, 0])
+            U_chan_1, S_chan_1, V_chan_1 = np.linalg.svd(X[:, :, 1])
+            U_chan_2, S_chan_2, V_chan_2 = np.linalg.svd(X[:, :, 2])
+            
+            U = np.array([U_chan_0,U_chan_1,U_chan_2]).transpose(1,2,0)
+            minND = min(X.shape[0], X.shape[1])
+            S = np.concatenate((S_chan_0.reshape(minND,1), S_chan_1.reshape(minND,1), S_chan_2.reshape(minND,1)), axis=1)
+            V = np.array([V_chan_0, V_chan_1, V_chan_2]).transpose(1, 2, 0)
+        else:
+            U, S, V = np.linalg.svd(X)
+        return U, S, V
+        #raise NotImplementedError
 
 
     def rebuild_svd(self, U, S, V, k): # [5pts]
@@ -41,10 +51,21 @@ class ImgCompression(object):
 
         Hint: numpy.matmul may be helpful for reconstructing color images
         """
-        raise NotImplementedError
-
-
-
+        if len(U.shape) == 3:
+            U_chan_0, S_chan_0, V_chan_0 = U[:, :, 0], S[:, 0], V[:, :, 0]
+            U_chan_1, S_chan_1, V_chan_1 = U[:, :, 1], S[:, 1], V[:, :, 1]
+            U_chan_2, S_chan_2, V_chan_2 = U[:, :, 2], S[:, 2], V[:, :, 2]
+            
+            X_chan_0 = np.matmul(U_chan_0[:, : k], np.matmul(np.diag(S_chan_0[: k]), V_chan_0[: k]))
+            X_chan_1 = np.matmul(U_chan_1[:, : k], np.matmul(np.diag(S_chan_1[: k]), V_chan_1[: k]))
+            X_chan_2 = np.matmul(U_chan_2[:, : k], np.matmul(np.diag(S_chan_2[: k]), V_chan_2[: k]))
+            
+            Xrebuild = np.array([X_chan_0, X_chan_1, X_chan_2]).transpose(1, 2, 0)
+        else:
+            Xrebuild = np.matmul(U[:, : k], np.matmul(np.diag(S[: k]), V[: k]))
+        return Xrebuild
+        #raise NotImplementedError
+        
 
     def compression_ratio(self, X, k): # [5pts]
         """
@@ -57,8 +78,12 @@ class ImgCompression(object):
         Return:
             compression_ratio: float of proportion of storage used by compressed image
         """
-        raise NotImplementedError
-
+        N = X.shape[0]
+        D = X.shape[1]
+        compressed_size = k * (N + D + 1)
+        original_size = N * D
+        return compressed_size / original_size
+        #raise NotImplementedError
 
 
     def recovered_variance_proportion(self, S, k): # [5pts]
@@ -72,5 +97,7 @@ class ImgCompression(object):
         Return:
            recovered_var: float (array of 3 floats for color image) corresponding to proportion of recovered variance
         """
-        raise NotImplementedError
-        
+        sigma_1 = sum(S[: k] ** 2)
+        sigma_i = sum(S ** 2)
+        return sigma_1 / sigma_i
+        #raise NotImplementedError

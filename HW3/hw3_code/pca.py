@@ -26,8 +26,8 @@ class PCA(object):
             self.S: (min(N,D), ) numpy array
             self.V: (min(N,D), D) numpy array (no need to transpose what is returned from np.linalg.svd)
         """
-        raise NotImplementedError
-
+        self.U, self.S, self.V = np.linalg.svd((X - X.mean(axis = 0)),full_matrices=False)
+        #raise NotImplementedError
 
 
 
@@ -43,9 +43,8 @@ class PCA(object):
         Return:
             X_new: (N,K) numpy array corresponding to data obtained by applying PCA on data
         """
-        raise NotImplementedError
-
-
+        return self.U[:, : K] * self.S[: K]
+        #raise NotImplementedError
 
 
     def transform_rv(self, data, retained_variance=0.99): # 3 pts
@@ -62,9 +61,11 @@ class PCA(object):
             X_new: (N,K) numpy array corresponding to data obtained by applying PCA on data, where K is the number of columns
                    to be kept to ensure retained variance value is retained_variance
         """
-        raise NotImplementedError
-
-
+        S = np.square(self.S)
+        total_var = np.sum(S)
+        cumsum = np.cumsum(S)
+        return self.transform(data,np.argwhere(cumsum / total_var >= retained_variance)[0][0] + 1)
+        #raise NotImplementedError
 
 
     def get_V(self):
@@ -86,9 +87,12 @@ class PCA(object):
             
         Return: None
         """
-        raise NotImplementedError
-
-
+        self.fit(X)
+        X_new = self.transform(X, K=2)
+        plt.scatter(X_new[y == 0, 0], X_new[y == 0, 1], c='blue', label='0')
+        plt.scatter(X_new[y == 1, 0], X_new[y == 1, 1], c='magenta', label='1')
+        plt.scatter(X_new[y == 2, 0], X_new[y == 2, 1], c='red', label='2')
+        #raise NotImplementedError
 
 
         ##################### END YOUR CODE ABOVE, DO NOT CHANGE BELOW #######################

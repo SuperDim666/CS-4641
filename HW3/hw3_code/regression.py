@@ -15,7 +15,8 @@ class Regression(object):
         Return:
             A float value
         """
-        raise NotImplementedError
+        return np.sqrt(np.mean((pred - label) ** 2))
+        #raise NotImplementedError
     
     def construct_polynomial_feats(self, x, degree): # [5pts]
         """
@@ -54,7 +55,12 @@ class Regression(object):
                   [ x_{3,1}^3  x_{3,2}^3]]]
 
         """
-        raise NotImplementedError
+        feat = np.ones((x.shape[0], degree + 1))
+        feat[:, 1] = x
+        for i in range(x.shape[0]):
+            for j in range(1, degree + 1):
+                feat[i,j] = np.power(feat[i, 1], j)
+        return feat
 
 
     def predict(self, xtest, weight): # [5pts]
@@ -67,7 +73,8 @@ class Regression(object):
         Return:
             prediction: (N,1) numpy array, the predicted labels
         """
-        raise NotImplementedError
+        return np.dot(xtest, weight)
+        #raise NotImplementedError
 
     # =================
     # LINEAR REGRESSION
@@ -84,7 +91,8 @@ class Regression(object):
         Return:
             weight: (D,1) numpy array, the weights of linear regression model
         """
-        raise NotImplementedError
+        return np.dot(np.linalg.pinv(xtrain),ytrain)
+        #raise NotImplementedError
 
         
 
@@ -136,7 +144,11 @@ class Regression(object):
         Return:
             weight: (D,1) numpy array, the weights of ridge regression model
         """
-        raise NotImplementedError
+        _, D = xtrain.shape
+        Iden = np.identity(D)
+        Iden[0, :] = 0
+        return np.dot(np.linalg.inv(np.dot(xtrain.T, xtrain) + c_lambda*Iden), np.dot(xtrain.T, ytrain))
+        #raise NotImplementedError
 
 
         
@@ -190,6 +202,15 @@ class Regression(object):
         # For cross validation, use 10-fold method and only use it for your training data (you already have the train_indices to get training data).
         # For the training data, split them in 10 folds which means that use 10 percent of training data for test and 90 percent for training.
         """
-        raise NotImplementedError
+        meanErrors = []
+        for i in range(kfold):
+            x_train = (np.split(X, kfold)).copy()
+            y_train = (np.split(y, kfold)).copy()
+            ridge = self.ridge_fit_closed(np.vstack(x_train),np.vstack(y_train),c_lambda)
+            predicted = self.predict(x_train.pop(i), ridge)
+            rmse = self.rmse(y_train.pop(i),predicted)
+            meanErrors.append(rmse)
+        return np.mean(meanErrors)
+        #raise NotImplementedError
 
 

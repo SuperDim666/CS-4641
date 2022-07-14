@@ -27,7 +27,12 @@ class NaiveBayes(object):
         Return:
             likelihood_ratio: (<number of labels>, D) numpy array, the likelihood ratio of different words for the different classes of sentiments.
         '''
-        raise NotImplementedError
+        likelihood_ratio = []
+        for rating in ratings_Sentiments:
+            likelihood = (rating.sum(axis=0) + 1) / (rating.sum() + rating.shape[1])
+            likelihood_ratio.append(likelihood)
+        return np.array(likelihood_ratio)
+        #raise NotImplementedError
 
     def priors_prob(self, ratings_Sentiments):  # [5pts]
         '''
@@ -50,7 +55,17 @@ class NaiveBayes(object):
         Return:
             priors_prob: (1, <number of labels>) numpy array, where each entry denotes the prior probability for each class
         '''
-        raise NotImplementedError
+        ratings_sum = 0
+        priors_prob = []
+        
+        for rating in ratings_Sentiments:
+            ratings_sum += np.sum(rating)
+
+        for rating in ratings_Sentiments:
+            priors_prob.append(np.sum(rating) / ratings_sum)
+
+        return np.reshape(np.array(priors_prob),(1, len(priors_prob)))
+        #raise NotImplementedError
 
     
     def analyze_sentiment(self, likelihood_ratio, priors_prob, X_test):  # [5pts]
@@ -62,6 +77,17 @@ class NaiveBayes(object):
         Return:
             ratings: (N_test,) numpy array, where each entry is a class label specific for the Naïve Bayes model
         '''
-        raise NotImplementedError
+        ratings = []
+        N_test_len = np.shape(X_test)[0]
+        label_num = np.shape(likelihood_ratio)[0]
+        for i in range(N_test_len):
+            temp = []
+            for j in range(label_num):
+                prior = priors_prob[0][j]
+                likelihood = np.prod(np.power(likelihood_ratio[j, :],X_test[i, :]))
+                temp.append(prior * likelihood)
+            ratings.append(np.argmax(temp))
+        return np.array(ratings)
+        #raise NotImplementedError
 
 
