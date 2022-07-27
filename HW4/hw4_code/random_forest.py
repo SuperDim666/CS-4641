@@ -35,15 +35,14 @@ class RandomForest(object):
             np.random.seed(seed = random_seed)  # DO NOT REMOVE
 
         ############# Get Row Indices First - write your code below #####################
-
-
+        row_idx = np.random.choice(num_training, num_training, replace = True)
         #################################################################################
 
         ############# Get Col Indices Second - write your code below ####################
- 
-
-        ##################################################################################
-        raise NotImplementedError # delete this
+        col_idx = np.random.choice(num_features, int(num_features * self.max_features), replace = False)
+        return row_idx, col_idx
+                    ##################################################################################
+        #raise NotImplementedError # delete this
         
 
             
@@ -73,7 +72,16 @@ class RandomForest(object):
         Returns: 
             None. Calling this function should train the decision trees held in self.decision_trees
         """
-        raise NotImplementedError # delete this
+        
+        self.bootstrapping(X.shape[0],X.shape[1])
+        for i in range(self.n_estimators):
+            row = self.bootstraps_row_indices[i]
+            col = self.feature_indices[i]
+            x_select = X[row, :][:, col]
+            y_select = y[row]
+            self.decision_trees[i].fit(x_select, y_select)
+        
+        #raise NotImplementedError # delete this
      
     def OOB_score(self, X, y):
         # helper function. You don't have to modify it
@@ -102,8 +110,21 @@ class RandomForest(object):
             None. Calling this function should simply display the aforementioned feature importance bar chart
         """
         plt.style.use('ggplot')
-    
-        raise NotImplementedError # delete this
+        tree_idx = 0
+        for decision_tree in self.decision_trees:
+            plt.figure()
+            feature_importance = decision_tree.feature_importances_
+            ranking = np.argsort(feature_importance)[::-1]
+            plt.title("Decision tree " + str(tree_idx))
+            plt.bar(
+                data_train.columns[ranking],
+                feature_importance[ranking],
+                width = 0.6,
+            )
+            plt.show()
+            tree_idx += 1
+        
+        #raise NotImplementedError # delete this
 
 
 def select_hyperparameters():
@@ -119,8 +140,9 @@ def select_hyperparameters():
         max_depth: int number (e.g 4)
         max_features: a float between 0.0-1.0 (e.g 0.1)
     """
-    n_estimators = None
-    max_depth = None
-    max_features = None
-    raise NotImplementedError # delete this
+    n_estimators = 7
+    max_depth = 12
+    max_features = 0.7
+    return n_estimators, max_depth, max_features
+    #raise NotImplementedError # delete this
     

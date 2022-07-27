@@ -77,11 +77,13 @@ class dlnet:
             alpha: the slope coefficent of the negative part.
         return: Leaky_Relu(u) 
         '''
+        pos = np.maximum(u, 0)
+        neg = np.minimum(u, 0) * alpha
+        return pos + neg
         #TODO: implement this 
         
 
         
-
     def Tanh(self, u):
         '''
         In this method you are going to implement element wise Tanh. 
@@ -89,6 +91,8 @@ class dlnet:
         Input: u of any dimension
         return: Tanh(u) 
         '''
+        u_copy = np.copy(u)
+        return (np.exp(u_copy) - np.exp(-1 * u_copy)) / (np.exp(u_copy) + np.exp(-1 * u_copy))
         #TODO: implement this 
         
 
@@ -129,7 +133,8 @@ class dlnet:
 
         return: MSE 1x1: loss value 
         '''
-        
+        N = np.shape(y)[1]
+        return np.array([np.sum((y - yh) ** 2) / (2 * N)])
         #TODO: implement this 
 
 
@@ -147,8 +152,13 @@ class dlnet:
         #TODO: implement this 
             
         self.ch['X'] = x #keep
+
+        u1 = np.dot(self.param['theta1'], self.ch['X']) + self.param['b1']
+        o1 = self.Leaky_Relu(self.alpha, u1)
+        u2 = np.dot(self.param['theta2'], o1) + self.param['b2']
+        o2 = self.Tanh(u2)
             
-        u1, o1, u2, o2 = None, None, None, None #remove this for implementation
+        #u1, o1, u2, o2 = None, None, None, None #remove this for implementation
             
 
 
@@ -172,8 +182,26 @@ class dlnet:
 
         '''    
         #TODO: implement this 
+
+        n = np.shape(self.ch['X'])[1]
+        do2_u2 = self.dTanh(self.ch['u2'])
+        du2_theta2 = self.ch['o1']
+        du2_o1 = self.param['theta2']
+        du1_theta1 = self.ch['X']
+        
+        dLoss_o2 = (self.ch['o2'] - y) * (1 / n)
+        dLoss_u2 = np.multiply(dLoss_o2, do2_u2)
+        du2_b2 = np.ones((dLoss_u2.shape[1], 1))
+        dLoss_theta2 = np.matmul(dLoss_u2, du2_theta2.T)
+        
+        dLoss_b2 = np.matmul(dLoss_u2, du2_b2)
+        dLoss_o1 = np.dot(du2_o1.T, dLoss_u2)
+        do1_u1 = self.dL_Relu(self.alpha, self.ch['o1'])
+        dLoss_u1 = dLoss_o1 * do1_u1
+        dLoss_theta1 = np.dot(dLoss_u1, du1_theta1.T)
+        dLoss_b1 = np.dot(dLoss_u1, du2_b2)
              
-        dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = None, None, None, None #remove this for implementation
+        #dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = None, None, None, None #remove this for implementation
       
             
         # parameters update, no need to change these lines
@@ -198,8 +226,14 @@ class dlnet:
         ''' 
         
         #Todo: implement this 
-        
-       
+        self.nInit()
+        for iteration in range(iter):
+            predicted = self.predict(x)
+            loss = self.nloss(y, predicted)
+            if iteration % 1000 == 0:
+                self.loss.append(loss)
+            self.backward(y, predicted)
+                
     
     #bonus for undergrdauate students 
     def batch_gradient_descent(self, x, y, iter = 60000, local_test=False):
@@ -231,10 +265,30 @@ class dlnet:
                     appending/printing out loss and y batch arrays
 
         '''
-        
         #Todo: implement this 
         
-
+        self.nInit()
+        D = x.shape[0]
+        N = x.shape[1]
+        start = 0
+        end = 0
+        for iteration in range(iter):
+            end = start + self.batch_size
+            batch = []
+            for i in range(start, end):
+                batch.append(i % N)
+            
+            x_mini, y_mini= x[:, batch], y[:, batch]
+            predicted = self.predict(x_mini)
+            loss = self.nloss(y_mini, predicted)[0]
+            
+            if iteration % 1000 == 0:
+                self.loss.append(loss)
+                print("Loss after iteration " + str(iteration) + " : " + str(loss))
+                self.batch_y.append(y_mini)
+            
+            self.backward(y_mini, predicted)
+            start += self.batch_size
 
     def predict(self, x): 
         '''
