@@ -18,3 +18,9 @@ This course introduces techniques in machine learning with an emphasis on algori
 - Support vector machines
 - Lienar classification and regression
 - Neural networks
+
+In addition to the technical content, this class includes the following learning objectives:
+- Structuring a task into a machine learning work flow
+- Collaborating effectively on team projects in a remote environment
+- Conducting peer evaluation in a constructive format
+- Communicating technical content in a concise and effective manner
