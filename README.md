@@ -16,7 +16,7 @@ This course introduces techniques in machine learning with an emphasis on algori
 3. Supervised learning for predictive data analysis
 - Tree based models
 - Support vector machines
-- Lienar classification and regression
+- Linear classification and regression
 - Neural networks
 
 In addition to the technical content, this class includes the following learning objectives:
