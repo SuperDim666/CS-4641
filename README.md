@@ -1,5 +1,5 @@
 # CS-4641
-Georgia Tech's Machine Learning Course
+Georgia Tech's CS 4641: Machine Learning
 
 ## Course Overview
 This course introduces techniques in machine learning with an emphasis on algorithms and their applications to real-world data. We will investigate the following question: how to computationally extract useful knowledge from data for decision making and task support! The course will also cover briefly Ethics in Machine Learning and Secure Computing. We will focus on machine learning methods, which are organized into three parts:
